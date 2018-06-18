@@ -30,29 +30,35 @@ unset($data['numberStatistics']);
 echo "week\tdate\t\tmatches<br/>";
 
 // iterate throw the games in the dataset
-foreach ($data['drawings'] as $key => $game)
+foreach ($data['drawings'] as $game)
 {
 	// filter games what we are interrested in
 	if ( $game['week'] >= $firstWeek && $game['week'] <= $lastWeek && $game['year'] == $year)
-	{
-		$match = 0;
-		
-		// check numbers in the game
-		foreach ($game['numbers'] as $key => $number)
-		{
-			// check all fields and numbers we used	
-			foreach ($numbers as $key => $myNumber)
-			{
-				// count matching numbers
-				if ( $number == $myNumber )
-				{
-					$match++;
-				}
-			}			
-		}
-		
+	{	
 		// print how many numbers are matching
-		echo $game['week']."\t".$game['date']."\t".$match." <br/>";
+		echo $game['week']."\t".$game['date']."\t";
+
+		// check all fields we used
+		foreach ($numbers as $field => $myGame)
+		{
+			$match = 0;
+			foreach ($myGame as $myNumber)
+			{
+				// check numbers in the game
+				foreach ($game['numbers'] as $number)
+				{
+					// count matching numbers
+					if ( $number == $myNumber )
+					{
+						$match++;
+					}
+				}
+			}
+	
+			echo $match."\t";
+		}
+
+		echo "<br/>";
 	}
 }
 ?>
