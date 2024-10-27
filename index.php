@@ -1,5 +1,14 @@
 <?php
 include("config.php");
+
+$localConfigFile="config.local.php";
+if (file_exists($localConfigFile)) {
+//	echo "Loading $localConfigFile\n";
+} else {
+	echo "$localConfigFile file does not exists. Create it first!\n";
+	exit;
+}
+
 // Download and parse dataset
 $url='https://bet.szerencsejatek.hu/cmsfiles/otos.json';
 $file = file_get_contents($url);
