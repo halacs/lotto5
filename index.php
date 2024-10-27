@@ -1,65 +1,104 @@
-<pre>
 <?php
-// numbers we used in bet
-$numbers = array(
-									'field1'=>array( 06, 16, 17, 18, 80 ),
-									'field2'=>array( 07, 16, 25, 55, 58 ),
-									'field3'=>array( 11, 22, 33, 44, 90 ),
-									'field4'=>array(  3,  8, 21, 36, 38 ),
-									'field5'=>array( 15, 30, 32, 64, 69 ),
-									'field6'=>array( 15, 22, 49, 73, 87 )
-								);
-
-// year when we bet
-$year = 2018;
-// bet valid from week...
-$firstWeek=23;
-// bet valid until week...
-$lastWeek=27;
-
-// json data source
-
+include("config.php");
+// Download and parse dataset
 $url='https://bet.szerencsejatek.hu/cmsfiles/otos.json';
 $file = file_get_contents($url);
 $data = json_decode($file, true);
 
-# throw unnecessary data part away
-unset($data['numberStatistics']);
+// throw unnecessary data part away
+//unset($data['numberStatistics']);
 
-// header
-echo "week\tdate\t\tmatches<br/>";
+$results = array();
 
-// iterate throw the games in the dataset
-foreach ($data['drawings'] as $game)
-{
-	// filter games what we are interrested in
-	if ( $game['week'] >= $firstWeek && $game['week'] <= $lastWeek && $game['year'] == $year)
-	{	
-		// print how many numbers are matching
-		echo $game['week']."\t".$game['date']."\t";
+$currentWeekNumber=date("W");
 
-		// check all fields we used
-		foreach ($numbers as $field => $myGame)
-		{
-			$match = 0;
-			foreach ($myGame as $myNumber)
-			{
-				// check numbers in the game
-				foreach ($game['numbers'] as $number)
-				{
-					// count matching numbers
-					if ( $number == $myNumber )
-					{
-						$match++;
-					}
-				}
-			}
-	
-			echo $match."\t";
+foreach ($games as $player => $game) {
+	if ($currentWeekNumber >= $game['firstWeek'] && $currentWeekNumber <= $game['lastWeek']) {	// filter out stil valid games
+		$ret = isMatch($data, $game['year'], $game['firstWeek'], $game['lastWeek'], $game['numbers']);
+		if (!empty($ret)) {
+			$results[$player][] = $ret;
 		}
-
-		echo "<br/>";
 	}
 }
+
+// Print summarized results
+// Check if there is a game with at least 2 matching numbers which is not too old
+$emailMessage = "";
+$currentWeekNo=date("W");
+foreach ($results as $player => $playerResults) {
+	foreach ($playerResults as $i => $fieldResults) {
+		foreach ($fieldResults as $ii => $result) {
+			if ($result['match'] >= 2) {
+				$emailMessage = $emailMessage . $player."! ".$result['match']." numbers matches on ".$result['date']."! Prize: ".$result['prize']."\n";
+			}
+		}
+	}
+}
+
+if ($emailMessage == "") {
+	$emailMessage = "No match at all :(\n";
+}
+
+// Print detailed results
+if (!empty($results)) {
+	$emailMessage = $emailMessage . print_r($results, true);
+	mail($emailTo, "lotto5", $emailMessage);
+} 
+function isMatch($data, $year, $firstWeek, $lastWeek, $numbers) {
+	$ret = array();
+
+	// iterate throw the games in the dataset
+	foreach ($data['drawings'] as $draw) {
+		// filter games what we are interrested in
+		if ( $draw['week'] >= $firstWeek && $draw['week'] <= $lastWeek && $draw['year'] == $year) {
+			// check all fields we used
+			foreach ($numbers as $field => $myBet) {
+				if (count($myBet) <> 5) {
+					die('Incorrect net found!');
+				}
+
+				$match = 0;
+				foreach ($myBet as $myNumber) {
+					// check numbers in the drawing
+					foreach ($draw['numbers'] as $number) {
+						// count matching numbers
+						if ( $number == $myNumber ) {
+							$match++;
+						}
+					}
+				}
+		
+				$prize = 0;
+				switch ($match) {
+				    case 1:
+					$prize = isset($draw['1HitPrize']) ? $draw['1HitPrize'] : "?";
+					break;
+				    case 2:
+					$prize = isset($draw['2HitPrize']) ? $draw['2HitPrize'] : "?";
+					break;
+				    case 3:
+					$prize = isset($draw['3HitPrize']) ? $draw['3HitPrize'] : "?";
+					break;
+				    case 4:
+					$prize = isset($draw['4HitPrize']) ? $draw['4HitPrize'] : "?";
+					break;
+				    case 5:
+					$prize = isset($draw['5HitPrize']) ? $draw['5HitPrize'] : "?";
+					break;
+				}	
+
+				$ret[] = array(
+						'year' => $year,
+						'week' => $draw['week'],
+						'date' => $draw['date'],
+						'match' => $match,
+						'field' => $field,
+						'prize' => $prize
+					);
+			}
+		}
+	}
+
+	return $ret;
+}
 ?>
-</pre>
