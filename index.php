@@ -1,7 +1,7 @@
 <?php
-include("config.php");
+include(__DIR__ . "/config.php");
 
-$localConfigFile="config.local.php";
+$localConfigFile=__DIR__ . "/config.local.php";
 if (file_exists($localConfigFile)) {
 //	echo "Loading $localConfigFile\n";
 } else {
