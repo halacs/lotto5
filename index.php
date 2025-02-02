@@ -2,12 +2,11 @@
 include(__DIR__ . "/config.php");
 
 $localConfigFile=__DIR__ . "/config.local.php";
-if (file_exists($localConfigFile)) {
-//	echo "Loading $localConfigFile\n";
-} else {
+if (!file_exists($localConfigFile)) {
 	echo "$localConfigFile file does not exists. Create it first!\n";
 	exit;
 }
+include($localConfigFile);
 
 // Download and parse dataset
 $url='https://bet.szerencsejatek.hu/cmsfiles/otos.json';
@@ -37,7 +36,7 @@ $currentWeekNo=date("W");
 foreach ($results as $player => $playerResults) {
 	foreach ($playerResults as $i => $fieldResults) {
 		foreach ($fieldResults as $ii => $result) {
-			if ($result['match'] >= 2) {
+			if (intval($result['prize']) > 0) {
 				$emailMessage = $emailMessage . $player."! ".$result['match']." numbers matches on ".$result['date']."! Prize: ".$result['prize']."\n";
 			}
 		}
@@ -45,12 +44,12 @@ foreach ($results as $player => $playerResults) {
 }
 
 if ($emailMessage == "") {
-	$emailMessage = "No match at all :(\n";
+	$emailMessage = "No relevant match :(\n";
 }
 
 // Print detailed results
 if (!empty($results)) {
-	$emailMessage = $emailMessage . print_r($results, true);
+	$emailMessage = $emailMessage . "\n" . print_r($results, true);
 	mail($emailTo, "lotto5", $emailMessage);
 } 
 function isMatch($data, $year, $firstWeek, $lastWeek, $numbers) {
